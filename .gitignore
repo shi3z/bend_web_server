@@ -1,0 +1,5 @@
+id_ed25519
+id_ed25519.pub
+git_ssh.py
+__pycache__/
+*.log
