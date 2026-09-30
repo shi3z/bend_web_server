@@ -1,96 +1,98 @@
-# Bend Web Server (HTTP サーバー)
+# Bend HTTP Web Server
 
-[Bend](https://bend-lang.com/)（HigherOrderCO 開発）で実装された並行 HTTP Web サーバーです。
+A concurrent HTTP/1.1 web server implemented from scratch in **[Bend](https://bend-lang.com/)** (developed by HigherOrderCO).
 
-Bend は相互作用コンビネータ（Interaction Combinators）と **HVM2**（Higher-order Virtual Machine）を基盤とする、超並列・高水準関数型言語です。
+Bend is a high-level, massively parallel, pure functional programming language powered by **Interaction Combinators** and the **HVM2** runtime.
 
-本プロジェクトは、Bend 2.0 の最新 IO エフェクトシステム（`Base` ライブラリの `TCP` モジュール）を活用し、完全な HTTP/1.1 Web サーバーをピュアな Bend 言語で実装しています。
-
----
-
-## 🌟 特徴
-
-1. **ネイティブ TCP ソケット対応**:
-   - `TCP.listen("127.0.0.1", 8080)` でソケットをバインド＆リッスン。
-   - `TCP.accept`、`TCP.recv`、`TCP.send`、`Socket.close` による通信制御。
-2. **`IO.spawn` による非同期・並行クライアント処理**:
-   - 接続を受信するたびに `IO.spawn` で独立した計算（グリーンファイバー）を立ち上げ、並行にリクエストを処理します。
-3. **関数型パターンマッチングによる HTTP ルーティング**:
-   - リクエスト行のプレフィックスをマッチングし、パスに応じたレスポンスを生成。
-4. **アフィン型（Affine Types）によるリソース安全管理**:
-   - `Socket` や `Listener` のハンドルは複製不可・消費必須（Linear/Affine）として型システムで厳密に追跡され、リークを防止。
-5. **リッチなエンドポイント**:
-   - `/` : スタイリッシュなダークテーマの HTML ホームページ
-   - `/hello` : メッセージ表示ページ
-   - `/about` : Bend 言語の解説ページ
-   - `/api` : JSON レスポンス API (`application/json`)
-   - `*` : 404 Not Found ページ
+This project demonstrates how to build a full-featured HTTP web server in pure Bend using the Bend 2.0 IO effect system (`Base` standard library's `TCP` module), handling concurrent client connections with green threads via `IO.spawn`.
 
 ---
 
-## 📂 ディレクトリ構成
+## Features
 
-- [`server.bend`](server.bend): Bend で書かれた Web サーバーの本体実装
-- [`start.sh`](start.sh): サーバーの起動シェルスクリプト
-- [`test_client.py`](test_client.py): 各エンドポイント（HTML, JSON, 404）を検証するテストクライアント
+- **Native TCP Socket Networking**:
+  - Listens on `0.0.0.0:8080` (accessible via localhost, LAN, and Tailscale / Tailnet).
+  - Uses Bend 2.0 TCP effects: `TCP.listen`, `TCP.accept`, `TCP.recv`, `TCP.send`, and `Socket.close`.
+- **Concurrent Request Handling via `IO.spawn`**:
+  - Spawns an isolated computation (green thread / fiber) for every incoming connection, providing non-blocking concurrent request handling.
+- **Pure Functional Routing**:
+  - Pattern matches on incoming HTTP request lines and prefixes to dynamically route requests to endpoints.
+- **Affine Resource Safety**:
+  - Leverages Bend's affine type system where handles like `Socket` and `Listener` cannot be leaked or discarded without explicit consumption.
+- **Rich Endpoints**:
+  - `GET /` — Interactive dark-themed HTML homepage.
+  - `GET /hello` — Greetings page.
+  - `GET /about` — Introduction to the Bend language and Interaction Combinators.
+  - `GET /api` — JSON API response (`application/json`).
+  - `*` — 404 Not Found error page.
 
 ---
 
-## 🚀 クイックスタート
+## Project Structure
 
-### 1. Bend のインストール
+- [`server.bend`](server.bend) — The complete HTTP web server implementation written in Bend.
+- [`start.sh`](start.sh) — Convenient startup shell script.
+- [`test_client.py`](test_client.py) — Automated Python test suite verifying HTML, JSON, and 404 endpoints.
+- [`README.md`](README.md) — Project documentation.
 
-Bend が未インストールの場合は、公式インストーラーを実行します:
+---
+
+## Quick Start
+
+### 1. Install Bend
+
+If Bend is not already installed on your system:
 
 ```bash
 curl -fsSL https://bend-lang.com/install.sh | sh
 export PATH="$HOME/.bend/bin:$PATH"
 ```
 
-### 2. サーバーの起動
+### 2. Start the Server
 
 ```bash
-cd /home/shi3z/bend-web-server
+cd /path/to/bend-web-server
 ./start.sh
 ```
 
-または直接 `bend` コマンドで起動:
+Or run directly with the `bend` CLI:
 
 ```bash
 bend server.bend
 ```
 
-出力例:
+Sample output:
 ```text
 ========================================
   Bend Web Server is running on port 8080
-  Access: http://127.0.0.1:8080/
+  Local:     http://127.0.0.1:8080/
+  Tailscale: http://100.104.204.50:8080/
 ========================================
 [Bend-HTTP] GET / HTTP/1.1
 [Bend-HTTP] GET /api HTTP/1.1
 ```
 
-### 3. ブラウザや curl でアクセス
+### 3. Send Requests
 
-ブラウザで `http://127.0.0.1:8080/` にアクセスするか、curl でリクエストを送信します:
+Open `http://localhost:8080/` in your browser, or use `curl`:
 
 ```bash
-# ホームページ (HTML)
+# HTML Homepage
 curl -i http://127.0.0.1:8080/
 
 # JSON API
 curl -i http://127.0.0.1:8080/api
 
-# Hello ページ
+# Hello Endpoint
 curl -i http://127.0.0.1:8080/hello
 
-# 存在しないパス (404)
+# 404 Not Found
 curl -i http://127.0.0.1:8080/unknown
 ```
 
-### 4. 自動テストの実行
+### 4. Run Automated Tests
 
-サーバーを起動した状態で、別ターミナルからテストを実行します:
+With the server running, execute:
 
 ```bash
 python3 test_client.py
@@ -98,11 +100,11 @@ python3 test_client.py
 
 ---
 
-## 🔬 実装の詳細解説
+## Architecture & Implementation Notes
 
-### 1. TCP ソケットの受信ループ
+### Concurrent Accept Loop (`IO.spawn`)
 
-Bend では停止しないサーバーの無限ループは `@unsafe` デコレータを付与して再帰させます:
+In Bend, server event loops that run indefinitely are marked with `@unsafe`:
 
 ```bend
 def serve_next(m: Listener & Result<&1, &1, U32 & String, Socket>) -> IO(Listener):
@@ -120,7 +122,9 @@ def serve(l: Listener) -> IO(Unit):
     serve(l2)
 ```
 
-### 2. リクエストの受信とレスポンス送信
+Each connection is handed off to `IO.spawn(Unit, http_conn(s))` which runs concurrently without blocking the main listener loop.
+
+### Request Handling & Affine Handle Threading
 
 ```bend
 def http_handle_recv(m: Socket & Result<&1, &1, U32 & String, String>) -> IO(Unit):
@@ -137,4 +141,10 @@ def http_handle_recv(m: Socket & Result<&1, &1, U32 & String, String>) -> IO(Uni
       Socket.close(s)
 ```
 
-`Done{+req}` のように `+` アノテーションを付与することで、`String`（Data カインド）の複製を許可し、ルーティング関数とログ表示の両方に渡しています。
+Because socket handles are affine resources, operations thread the socket handle back (`(s, r)`), guaranteeing that sockets are explicitly closed in all execution branches.
+
+---
+
+## License
+
+MIT License.
